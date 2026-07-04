@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add-on Sourcing Engine — Project Kompass (Demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14212B; --ink2:#3A4A55; --steel:#5C6B76; --line:#DDD8CC; --line-soft:#E9E5DA;
+  --paper:#F7F6F2; --card:#FFFFFF; --verdi:#2E7D6B; --verdi-soft:#E7F0EC;
+  --amber:#C08A2D; --amber-soft:#F6ECD9; --geo:#8FB3AA;
+  --sans:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','SFMono-Regular',Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5}
+.mono{font-family:var(--mono)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+
+/* header */
+header{background:var(--ink);color:#EDEAE2;padding:30px 0 26px;border-bottom:3px solid var(--amber)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+h1{font-size:clamp(24px,3.4vw,36px);font-weight:700;letter-spacing:-.01em;line-height:1.12}
+.sub{color:#B7C0C6;font-size:14px;margin-top:8px;max-width:760px}
+.hdr-row{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;border:1px solid rgba(237,234,226,.35);color:#EDEAE2;padding:6px 10px;border-radius:3px;white-space:nowrap}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:22px 0 14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kpi .v{font-family:var(--mono);font-size:25px;font-weight:600;letter-spacing:-.02em}
+.kpi .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--steel);margin-top:4px}
+.kpi .v .u{font-size:14px;color:var(--steel)}
+
+/* controls */
+.controls{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.ctl-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);display:block;margin-bottom:5px}
+.pills{display:flex;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.pill{font-family:var(--mono);font-size:11.5px;padding:6px 13px;background:transparent;border:none;border-right:1px solid var(--line);cursor:pointer;color:var(--ink2)}
+.pill:last-child{border-right:none}
+.pill.on{background:var(--ink);color:#fff}
+input[type=range]{accent-color:var(--verdi);width:130px;vertical-align:middle}
+.rv{font-family:var(--mono);font-size:12px;font-weight:600;margin-left:8px}
+.tgl{display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;user-select:none}
+.tgl input{accent-color:var(--amber);width:15px;height:15px}
+select,input[type=search]{font-family:var(--mono);font-size:12px;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+input[type=search]{width:180px}
+.reset{font-family:var(--mono);font-size:11px;color:var(--steel);background:none;border:none;cursor:pointer;text-decoration:underline;margin-left:auto}
+
+/* layout */
+.grid{display:grid;grid-template-columns:1fr 340px;gap:14px;margin-bottom:14px}
+@media(max-width:920px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px}
+.card h2{font-size:13px;font-weight:600;letter-spacing:.01em}
+.card .hint{font-family:var(--mono);font-size:10px;color:var(--steel);margin-top:2px;margin-bottom:10px}
+
+/* scatter */
+#map svg{width:100%;height:auto;display:block}
+.tt{position:fixed;pointer-events:none;background:var(--ink);color:#EDEAE2;font-family:var(--mono);font-size:11px;padding:7px 9px;border-radius:5px;opacity:0;transition:opacity .12s;z-index:50;max-width:250px;line-height:1.45}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--steel)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* funnel */
+.f-row{display:grid;grid-template-columns:82px 1fr 30px;gap:9px;align-items:center;margin-bottom:8px}
+.f-lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink2)}
+.f-track{height:16px;background:var(--paper);border-radius:3px;overflow:hidden}
+.f-bar{height:100%;background:var(--verdi);border-radius:3px;min-width:2px;transition:width .35s}
+.f-n{font-family:var(--mono);font-size:11.5px;font-weight:600;text-align:right}
+
+/* methodology */
+.mrow{display:grid;grid-template-columns:1fr 34px;gap:8px;align-items:center;font-size:12px;margin-bottom:6px}
+.mrow .w{font-family:var(--mono);font-size:11px;font-weight:600;text-align:right}
+.swatch{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:7px;vertical-align:baseline}
+.src{font-size:11.5px;color:var(--steel);line-height:1.6;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+.src b{color:var(--ink2);font-weight:600}
+
+/* table */
+.tbl-card{padding:0;overflow:hidden}
+.tbl-head{padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:860px}
+th{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--steel);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+th.num,td.num{text-align:right}
+th:hover{color:var(--ink)}
+th .arr{color:var(--verdi)}
+td{padding:9px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--verdi-soft)}
+tbody tr.sel{background:var(--verdi-soft);box-shadow:inset 3px 0 0 var(--verdi)}
+.t-name{font-weight:600;font-size:13px}
+.t-city{font-family:var(--mono);font-size:10.5px;color:var(--steel)}
+.cbadge{font-family:var(--mono);font-size:10px;border:1px solid var(--line);border-radius:3px;padding:2px 6px;color:var(--ink2)}
+.num{font-family:var(--mono);font-size:12.5px}
+.tags span{font-family:var(--mono);font-size:9.5px;background:var(--paper);border:1px solid var(--line-soft);border-radius:3px;padding:1.5px 5px;margin-right:3px;color:var(--ink2);white-space:nowrap}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block}
+.score-cell{min-width:140px}
+.score-n{font-family:var(--mono);font-size:14px;font-weight:600;margin-bottom:3px}
+.spine{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--line-soft);max-width:130px}
+.spine i{height:100%;display:block}
+.sp-size{background:var(--ink2)}.sp-margin{background:var(--steel)}.sp-adj{background:var(--verdi)}.sp-geo{background:var(--geo)}.sp-succ{background:var(--amber)}
+.status{font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:3px;white-space:nowrap}
+.st-Identified{background:var(--paper);color:var(--steel);border:1px solid var(--line)}
+.st-Prioritized{background:#EEF2F4;color:var(--ink2);border:1px solid #CBD5DB}
+.st-Contacted{background:var(--verdi-soft);color:var(--verdi);border:1px solid #BCD8CF}
+.st-NDA{background:var(--amber-soft);color:#8A6420;border:1px solid #E3CD9E}
+.st-IOI{background:var(--ink);color:#fff;border:1px solid var(--ink)}
+
+/* drawer */
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(400px,100%);background:var(--card);border-left:1px solid var(--line);box-shadow:-14px 0 34px rgba(20,33,43,.13);transform:translateX(102%);transition:transform .25s ease;z-index:40;overflow-y:auto;padding:22px 24px}
+.drawer.open{transform:translateX(0)}
+.d-close{position:absolute;top:14px;right:16px;background:none;border:1px solid var(--line);border-radius:5px;font-family:var(--mono);font-size:12px;padding:3px 9px;cursor:pointer;color:var(--steel)}
+.d-close:hover{color:var(--ink)}
+.d-rank{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.d-name{font-size:19px;font-weight:700;line-height:1.2;margin:5px 0 3px;padding-right:50px}
+.d-loc{font-family:var(--mono);font-size:11px;color:var(--steel);margin-bottom:13px}
+.d-metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0}
+.d-m{background:var(--paper);border:1px solid var(--line-soft);border-radius:6px;padding:9px 11px}
+.d-m .v{font-family:var(--mono);font-size:16px;font-weight:600}
+.d-m .l{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);margin-top:2px}
+.d-sec{font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--steel);margin:16px 0 8px;border-top:1px dashed var(--line);padding-top:13px}
+.sb-row{display:grid;grid-template-columns:92px 1fr 40px;gap:8px;align-items:center;margin-bottom:6px;font-size:11.5px}
+.sb-track{height:8px;background:var(--paper);border:1px solid var(--line-soft);border-radius:4px;overflow:hidden}
+.sb-bar{height:100%;border-radius:4px}
+.sb-v{font-family:var(--mono);font-size:11px;text-align:right;color:var(--ink2)}
+.d-note{font-size:12.5px;line-height:1.55;color:var(--ink2);padding-left:12px;border-left:2px solid var(--verdi);margin-bottom:8px}
+.d-next{background:var(--verdi-soft);border:1px solid #BCD8CF;border-radius:6px;padding:10px 12px;font-size:12.5px;line-height:1.5}
+.d-next b{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--verdi);display:block;margin-bottom:4px}
+
+footer{border-top:1px solid var(--line);margin-top:28px;padding:22px 0 34px;color:var(--steel);font-size:11.5px;line-height:1.65}
+footer b{color:var(--ink2)}
+.empty{padding:34px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--steel)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap hdr-row">
+    <div>
+      <div class="eyebrow">Independent Work Sample · Synthetic Data · Not Affiliated</div>
+      <h1>Add-on Sourcing Engine</h1>
+      <div class="sub">Project Kompass — systematic origination of succession-driven tax, audit &amp; advisory practices across DACH for a buy-&amp;-build platform. Companion to the Project Kompass LBO model.</div>
+    </div>
+    <div class="chip">60 targets · demo universe</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="controls">
+    <div><span class="ctl-label">Country</span>
+      <div class="pills" id="cpills">
+        <button class="pill on" data-c="ALL">ALL</button><button class="pill" data-c="DE">DE</button><button class="pill" data-c="CH">CH</button><button class="pill" data-c="AT">AT</button>
+      </div>
+    </div>
+    <div><span class="ctl-label">Min fit score <span class="rv" id="msv">0</span></span>
+      <input type="range" id="ms" min="0" max="80" step="5" value="0">
+    </div>
+    <div><span class="ctl-label">Size band</span>
+      <select id="band">
+        <option value="ALL">All sizes</option>
+        <option value="S">&lt; €3m revenue</option>
+        <option value="M">€3–6m revenue</option>
+        <option value="L">&gt; €6m revenue</option>
+      </select>
+    </div>
+    <div><span class="ctl-label">Signals</span>
+      <label class="tgl"><input type="checkbox" id="succ"> Succession signal only</label>
+    </div>
+    <div><span class="ctl-label">Search</span>
+      <input type="search" id="q" placeholder="name or city…">
+    </div>
+    <button class="reset" id="reset">reset filters</button>
+  </div>
+
+  <div class="grid">
+    <div class="card" id="map">
+      <h2>Market map — size vs. profitability</h2>
+      <div class="hint">bubble = fit score · amber ring = succession signal · click to inspect</div>
+      <div id="scatter"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:#3A4A55"></span>DE</span>
+        <span><span class="dot" style="background:#2E7D6B"></span>CH</span>
+        <span><span class="dot" style="background:#8A6D3B"></span>AT</span>
+        <span><span class="dot" style="background:#fff;border:2px solid #C08A2D;width:7px;height:7px"></span>succession</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <h2>Pipeline funnel</h2>
+        <div class="hint">filtered universe by stage</div>
+        <div id="funnel"></div>
+      </div>
+      <div class="card">
+        <h2>Scoring methodology</h2>
+        <div class="hint">weighted fit score, 0–100</div>
+        <div id="method"></div>
+        <div class="src"><b>Production data sources:</b> Handelsregister / Zefix &amp; Firmenbuch extracts, WPK &amp; StBK member directories, company web signals (services, team pages, partner tenure), LinkedIn headcount trends. This demo uses a synthetic universe with identical structure.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card tbl-card">
+    <div class="tbl-head">
+      <div><h2>Ranked target list</h2><div class="hint" id="count"></div></div>
+      <div class="hint">click any column to sort · click a row for the full profile</div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    <b>Disclaimer.</b> All companies, figures and signals shown are fictitious/synthetic and generated for demonstration purposes.
+    This dashboard is an independent work sample prepared by <b>Davide Gallace</b>; it is not affiliated with, endorsed by, or
+    prepared on behalf of Ufenau Capital Partners AG. Sector framing reflects publicly announced buy-&amp;-build activity in
+    DACH professional services. Companion artifact: <b>Project Kompass — Buy-&amp;-Build LBO Model (Excel)</b>.
+  </footer>
+</div>
+
+<div class="tt" id="tt"></div>
+<aside class="drawer" id="drawer" aria-label="Target profile">
+  <button class="d-close" id="dclose">esc</button>
+  <div id="dbody"></div>
+</aside>
+
+<script>
+const DATA = [{"id": 9, "name": "Maier Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Muenchen", "region": "Bayern", "rev": 2.8, "margin": 0.168, "fte": 27, "beruf": 3, "services": ["StB", "WP", "Advisory", "M&A"], "age": "60+", "succession": true, "digital": true, "sub": {"size": 15.0, "margin": 14.7, "adjacency": 18, "geo": 15.0, "succession": 17.2}, "score": 80, "status": "IOI", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 1}, {"id": 5, "name": "Krueger Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Augsburg", "region": "Bayern", "rev": 4.6, "margin": 0.2, "fte": 48, "beruf": 8, "services": ["StB", "Payroll"], "age": "55-59", "succession": false, "digital": true, "sub": {"size": 23.2, "margin": 20.0, "adjacency": 10, "geo": 14.2, "succession": 9.5}, "score": 77, "status": "NDA", "notes": ["Cloud/DATEV-forward setup; low integration friction expected."], "rank": 2}, {"id": 13, "name": "Hartmann Schneider Wirtschaftspruefung & Steuerberatung", "country": "DE", "city": "Wuerzburg", "region": "Bayern", "rev": 5.3, "margin": 0.149, "fte": 45, "beruf": 6, "services": ["StB", "WP", "Payroll", "Advisory", "M&A"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 23.6, "margin": 11.5, "adjacency": 20, "geo": 13.5, "succession": 5.6}, "score": 74, "status": "NDA", "notes": ["Audit licence (WP) adds regulated capability to the platform.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 3}, {"id": 29, "name": "Sailer & Kollegen Steuerberatungsgesellschaft mbH", "country": "DE", "city": "Regensburg", "region": "Bayern", "rev": 4.1, "margin": 0.13, "fte": 34, "beruf": 5, "services": ["StB", "WP"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 20.9, "margin": 8.3, "adjacency": 13, "geo": 14.2, "succession": 17.3}, "score": 74, "status": "NDA", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 4}, {"id": 20, "name": "Kanzlei Fuchs Steuerberater", "country": "DE", "city": "Wuerzburg", "region": "Bayern", "rev": 4.9, "margin": 0.16, "fte": 50, "beruf": 9, "services": ["StB"], "age": "55-59", "succession": false, "digital": false, "sub": {"size": 24.5, "margin": 13.3, "adjacency": 8, "geo": 13.5, "succession": 13.0}, "score": 72, "status": "Contacted", "notes": ["Solid regional compliance book; standard integration playbook applies."], "rank": 5}, {"id": 24, "name": "WP/StB Huber & Maier PartG mbB", "country": "DE", "city": "Bonn", "region": "NRW", "rev": 2.6, "margin": 0.168, "fte": 26, "beruf": 3, "services": ["StB", "WP", "Payroll", "Advisory"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 14.1, "margin": 14.7, "adjacency": 18, "geo": 7.5, "succession": 17.5}, "score": 72, "status": "Contacted", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 6}, {"id": 19, "name": "Berger Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Leipzig", "region": "Sachsen", "rev": 3.9, "margin": 0.14, "fte": 36, "beruf": 5, "services": ["StB", "Payroll", "Advisory"], "age": "60+", "succession": true, "digital": true, "sub": {"size": 20.0, "margin": 10.0, "adjacency": 13, "geo": 7.5, "succession": 20.0}, "score": 70, "status": "Contacted", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 7}, {"id": 14, "name": "Moser & Kollegen Steuerberatungsgesellschaft mbH", "country": "DE", "city": "Regensburg", "region": "Bayern", "rev": 3.4, "margin": 0.1, "fte": 33, "beruf": 5, "services": ["StB", "WP", "Payroll"], "age": "60+", "succession": true, "digital": true, "sub": {"size": 17.7, "margin": 3.3, "adjacency": 15, "geo": 14.2, "succession": 19.0}, "score": 69, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 8}, {"id": 22, "name": "Keller Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Dresden", "region": "Sachsen", "rev": 4.9, "margin": 0.139, "fte": 42, "beruf": 7, "services": ["StB"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 24.5, "margin": 9.8, "adjacency": 8, "geo": 7.5, "succession": 19.0}, "score": 69, "status": "Contacted", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals."], "rank": 9}, {"id": 37, "name": "Meili & Kollegen Steuerberatungsgesellschaft mbH", "country": "DE", "city": "Regensburg", "region": "Bayern", "rev": 3.0, "margin": 0.173, "fte": 27, "beruf": 5, "services": ["StB", "WP", "Payroll", "Advisory"], "age": "45-54", "succession": false, "digital": false, "sub": {"size": 15.9, "margin": 15.5, "adjacency": 18, "geo": 14.2, "succession": 5.3}, "score": 69, "status": "Contacted", "notes": ["Audit licence (WP) adds regulated capability to the platform."], "rank": 10}, {"id": 57, "name": "Kanzlei Maier Wirtschaftspruefung und Steuerberatung", "country": "AT", "city": "Salzburg", "region": "Salzburg", "rev": 2.2, "margin": 0.149, "fte": 20, "beruf": 3, "services": ["StB", "WP"], "age": "60+", "succession": true, "digital": true, "sub": {"size": 12.3, "margin": 11.5, "adjacency": 13, "geo": 12.0, "succession": 19.8}, "score": 69, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 11}, {"id": 28, "name": "Steuerkanzlei Keller & Partner", "country": "DE", "city": "Karlsruhe", "region": "Baden-Wuerttemberg", "rev": 2.6, "margin": 0.123, "fte": 23, "beruf": 4, "services": ["StB", "WP", "Advisory"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 14.1, "margin": 7.2, "adjacency": 16, "geo": 12.8, "succession": 17.6}, "score": 68, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 12}, {"id": 32, "name": "WP/StB Hartmann & Sailer PartG mbB", "country": "DE", "city": "Karlsruhe", "region": "Baden-Wuerttemberg", "rev": 3.3, "margin": 0.11, "fte": 31, "beruf": 4, "services": ["StB", "WP", "Advisory"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 17.3, "margin": 5.0, "adjacency": 16, "geo": 12.8, "succession": 17.1}, "score": 68, "status": "Contacted", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 13}, {"id": 55, "name": "Kanzlei Gasser Wirtschaftspruefung und Steuerberatung", "country": "AT", "city": "Innsbruck", "region": "Tirol", "rev": 6.0, "margin": 0.183, "fte": 58, "beruf": 11, "services": ["StB", "Payroll"], "age": "55-59", "succession": true, "digital": false, "sub": {"size": 20.5, "margin": 17.2, "adjacency": 10, "geo": 11.2, "succession": 9.3}, "score": 68, "status": "Prioritized", "notes": ["Partner group approaching retirement window; succession conversation plausible."], "rank": 14}, {"id": 56, "name": "Leitner & Partner Wirtschaftstreuhand", "country": "AT", "city": "Graz", "region": "Steiermark", "rev": 6.4, "margin": 0.119, "fte": 61, "beruf": 8, "services": ["StB", "WP", "Advisory"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 18.6, "margin": 6.5, "adjacency": 16, "geo": 8.2, "succession": 18.8}, "score": 68, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 15}, {"id": 1, "name": "Steuerkanzlei Vogel & Partner", "country": "DE", "city": "Hannover", "region": "Niedersachsen", "rev": 3.1, "margin": 0.167, "fte": 28, "beruf": 4, "services": ["StB", "Payroll"], "age": "60+", "succession": true, "digital": true, "sub": {"size": 16.4, "margin": 14.5, "adjacency": 10, "geo": 6.8, "succession": 19.2}, "score": 67, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 16}, {"id": 6, "name": "Widmer Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Heilbronn", "region": "Baden-Wuerttemberg", "rev": 4.4, "margin": 0.142, "fte": 45, "beruf": 8, "services": ["StB", "WP", "Payroll", "Advisory"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 22.3, "margin": 10.3, "adjacency": 18, "geo": 12.8, "succession": 3.6}, "score": 67, "status": "Prioritized", "notes": ["Audit licence (WP) adds regulated capability to the platform.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 17}, {"id": 12, "name": "Sutter & Kollegen Steuerberatungsgesellschaft mbH", "country": "DE", "city": "Regensburg", "region": "Bayern", "rev": 3.1, "margin": 0.157, "fte": 28, "beruf": 5, "services": ["StB", "WP", "Payroll", "Advisory"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 16.4, "margin": 12.8, "adjacency": 18, "geo": 14.2, "succession": 5.8}, "score": 67, "status": "Prioritized", "notes": ["Audit licence (WP) adds regulated capability to the platform.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 18}, {"id": 35, "name": "Rueegg Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Muenster", "region": "NRW", "rev": 3.0, "margin": 0.166, "fte": 30, "beruf": 4, "services": ["StB", "Payroll"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 15.9, "margin": 14.3, "adjacency": 10, "geo": 6.8, "succession": 19.7}, "score": 67, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals."], "rank": 19}, {"id": 38, "name": "Gasser Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Mannheim", "region": "Baden-Wuerttemberg", "rev": 4.2, "margin": 0.163, "fte": 40, "beruf": 8, "services": ["StB", "M&A"], "age": "55-59", "succession": false, "digital": false, "sub": {"size": 21.4, "margin": 13.8, "adjacency": 10, "geo": 11.2, "succession": 10.4}, "score": 67, "status": "Prioritized", "notes": ["Existing transaction-advisory line - cross-sell anchor for the group."], "rank": 20}, {"id": 58, "name": "Kanzlei Frei Wirtschaftspruefung und Steuerberatung", "country": "AT", "city": "Wien", "region": "Wien", "rev": 4.6, "margin": 0.157, "fte": 48, "beruf": 8, "services": ["StB", "Advisory"], "age": "55-59", "succession": false, "digital": false, "sub": {"size": 23.2, "margin": 12.8, "adjacency": 11, "geo": 9.0, "succession": 10.6}, "score": 67, "status": "Prioritized", "notes": ["Solid regional compliance book; standard integration playbook applies."], "rank": 21}, {"id": 4, "name": "WP/StB Egger & Brandl PartG mbB", "country": "DE", "city": "Muenster", "region": "NRW", "rev": 6.4, "margin": 0.109, "fte": 62, "beruf": 9, "services": ["StB", "WP", "Payroll", "Advisory"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 18.6, "margin": 4.8, "adjacency": 18, "geo": 6.8, "succession": 17.3}, "score": 66, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 22}, {"id": 39, "name": "WP/StB Wolf & Egger PartG mbB", "country": "DE", "city": "Karlsruhe", "region": "Baden-Wuerttemberg", "rev": 2.6, "margin": 0.169, "fte": 26, "beruf": 4, "services": ["StB", "Payroll"], "age": "55-59", "succession": false, "digital": true, "sub": {"size": 14.1, "margin": 14.8, "adjacency": 10, "geo": 12.8, "succession": 13.9}, "score": 66, "status": "Prioritized", "notes": ["Cloud/DATEV-forward setup; low integration friction expected."], "rank": 23}, {"id": 45, "name": "Hartmann & Partner Treuhand", "country": "CH", "city": "Aarau", "region": "AG", "rev": 2.7, "margin": 0.124, "fte": 24, "beruf": 4, "services": ["StB", "WP", "Payroll", "Advisory"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 14.5, "margin": 7.3, "adjacency": 18, "geo": 9.8, "succession": 16.1}, "score": 66, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 24}, {"id": 33, "name": "Sutter Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Frankfurt", "region": "Hessen", "rev": 2.1, "margin": 0.117, "fte": 20, "beruf": 3, "services": ["StB", "WP", "Payroll", "Advisory"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 11.8, "margin": 6.2, "adjacency": 18, "geo": 9.8, "succession": 19.3}, "score": 65, "status": "Prioritized", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 25}, {"id": 60, "name": "Kanzlei Sailer Wirtschaftspruefung und Steuerberatung", "country": "AT", "city": "Innsbruck", "region": "Tirol", "rev": 5.0, "margin": 0.113, "fte": 51, "beruf": 8, "services": ["StB", "Payroll", "Advisory"], "age": "55-59", "succession": true, "digital": false, "sub": {"size": 25, "margin": 5.5, "adjacency": 13, "geo": 11.2, "succession": 10.0}, "score": 65, "status": "Prioritized", "notes": ["Partner group approaching retirement window; succession conversation plausible.", "Large payroll book at modest margin - direct shared-services synergy case."], "rank": 26}, {"id": 31, "name": "Schneider Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Dresden", "region": "Sachsen", "rev": 2.3, "margin": 0.145, "fte": 21, "beruf": 4, "services": ["StB", "WP", "Payroll"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 12.7, "margin": 10.8, "adjacency": 15, "geo": 7.5, "succession": 18.4}, "score": 64, "status": "Identified", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 27}, {"id": 51, "name": "Treuhand Steiner AG", "country": "CH", "city": "Luzern", "region": "LU", "rev": 1.5, "margin": 0.175, "fte": 13, "beruf": 2, "services": ["StB", "Payroll"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 9.1, "margin": 15.8, "adjacency": 10, "geo": 9.8, "succession": 19.7}, "score": 64, "status": "Identified", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals."], "rank": 28}, {"id": 11, "name": "Meili Baumann Wirtschaftspruefung & Steuerberatung", "country": "DE", "city": "Augsburg", "region": "Bayern", "rev": 7.8, "margin": 0.158, "fte": 65, "beruf": 13, "services": ["StB", "Payroll", "Advisory", "M&A"], "age": "55-59", "succession": false, "digital": true, "sub": {"size": 12.3, "margin": 13.0, "adjacency": 15, "geo": 14.2, "succession": 8.8}, "score": 63, "status": "Identified", "notes": ["Cloud/DATEV-forward setup; low integration friction expected.", "Existing transaction-advisory line - cross-sell anchor for the group."], "rank": 29}, {"id": 16, "name": "Leitner & Kollegen Steuerberatungsgesellschaft mbH", "country": "DE", "city": "Koeln", "region": "NRW", "rev": 2.6, "margin": 0.195, "fte": 21, "beruf": 4, "services": ["StB", "WP", "Advisory"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 14.1, "margin": 19.2, "adjacency": 16, "geo": 7.5, "succession": 5.8}, "score": 63, "status": "Identified", "notes": ["Audit licence (WP) adds regulated capability to the platform.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 30}, {"id": 34, "name": "Bachmann Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Freiburg", "region": "Baden-Wuerttemberg", "rev": 2.4, "margin": 0.115, "fte": 22, "beruf": 3, "services": ["StB", "WP"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 13.2, "margin": 5.8, "adjacency": 13, "geo": 12.8, "succession": 18.2}, "score": 63, "status": "Identified", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 31}, {"id": 50, "name": "Treuhand Pichler AG", "country": "CH", "city": "Luzern", "region": "LU", "rev": 2.7, "margin": 0.183, "fte": 26, "beruf": 4, "services": ["StB", "Payroll", "M&A"], "age": "55-59", "succession": false, "digital": true, "sub": {"size": 14.5, "margin": 17.2, "adjacency": 12, "geo": 9.8, "succession": 9.2}, "score": 63, "status": "Identified", "notes": ["Cloud/DATEV-forward setup; low integration friction expected.", "Existing transaction-advisory line - cross-sell anchor for the group."], "rank": 32}, {"id": 59, "name": "Brandl Steuerberatung GmbH", "country": "AT", "city": "Linz", "region": "OOe", "rev": 5.4, "margin": 0.165, "fte": 48, "beruf": 7, "services": ["StB", "WP"], "age": "45-54", "succession": false, "digital": false, "sub": {"size": 23.2, "margin": 14.2, "adjacency": 13, "geo": 10.5, "succession": 2.4}, "score": 63, "status": "Identified", "notes": ["Audit licence (WP) adds regulated capability to the platform."], "rank": 33}, {"id": 26, "name": "Lang & Kollegen Steuerberatungsgesellschaft mbH", "country": "DE", "city": "Muenchen", "region": "Bayern", "rev": 2.2, "margin": 0.179, "fte": 22, "beruf": 3, "services": ["StB", "WP", "Payroll"], "age": "45-54", "succession": false, "digital": false, "sub": {"size": 12.3, "margin": 16.5, "adjacency": 15, "geo": 15.0, "succession": 3.4}, "score": 62, "status": "Identified", "notes": ["Audit licence (WP) adds regulated capability to the platform."], "rank": 34}, {"id": 44, "name": "Vogel Treuhand GmbH", "country": "CH", "city": "St. Gallen", "region": "SG", "rev": 3.3, "margin": 0.154, "fte": 29, "beruf": 5, "services": ["StB", "Payroll"], "age": "55-59", "succession": false, "digital": true, "sub": {"size": 17.3, "margin": 12.3, "adjacency": 10, "geo": 11.2, "succession": 11.3}, "score": 62, "status": "Identified", "notes": ["Cloud/DATEV-forward setup; low integration friction expected."], "rank": 35}, {"id": 48, "name": "Graf & Partner Treuhand", "country": "CH", "city": "Basel", "region": "BS", "rev": 2.7, "margin": 0.136, "fte": 24, "beruf": 4, "services": ["StB", "WP"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 14.5, "margin": 9.3, "adjacency": 13, "geo": 9.0, "succession": 16.5}, "score": 62, "status": "Identified", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 36}, {"id": 49, "name": "Treuhand Wolf AG", "country": "CH", "city": "St. Gallen", "region": "SG", "rev": 2.3, "margin": 0.137, "fte": 19, "beruf": 3, "services": ["StB", "WP", "Payroll"], "age": "55-59", "succession": false, "digital": true, "sub": {"size": 12.7, "margin": 9.5, "adjacency": 15, "geo": 11.2, "succession": 13.9}, "score": 62, "status": "Identified", "notes": ["Audit licence (WP) adds regulated capability to the platform.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 37}, {"id": 52, "name": "Wagner & Partner Treuhand", "country": "CH", "city": "Bern", "region": "BE", "rev": 3.5, "margin": 0.15, "fte": 37, "beruf": 7, "services": ["StB", "Payroll"], "age": "55-59", "succession": true, "digital": false, "sub": {"size": 18.2, "margin": 11.7, "adjacency": 10, "geo": 8.2, "succession": 13.6}, "score": 62, "status": "Identified", "notes": ["Partner group approaching retirement window; succession conversation plausible."], "rank": 38}, {"id": 3, "name": "WP/StB Egger & Weber PartG mbB", "country": "DE", "city": "Frankfurt", "region": "Hessen", "rev": 1.8, "margin": 0.147, "fte": 15, "beruf": 2, "services": ["StB", "Advisory"], "age": "60+", "succession": true, "digital": true, "sub": {"size": 10.5, "margin": 11.2, "adjacency": 11, "geo": 9.8, "succession": 18.1}, "score": 61, "status": "Identified", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 39}, {"id": 17, "name": "Kanzlei Maier Steuerberater", "country": "DE", "city": "Karlsruhe", "region": "Baden-Wuerttemberg", "rev": 2.4, "margin": 0.161, "fte": 23, "beruf": 5, "services": ["StB"], "age": "55-59", "succession": false, "digital": false, "sub": {"size": 13.2, "margin": 13.5, "adjacency": 8, "geo": 12.8, "succession": 13.8}, "score": 61, "status": "Identified", "notes": ["Solid regional compliance book; standard integration playbook applies."], "rank": 40}, {"id": 10, "name": "WP/StB Zimmermann & Wagner PartG mbB", "country": "DE", "city": "Karlsruhe", "region": "Baden-Wuerttemberg", "rev": 3.2, "margin": 0.12, "fte": 27, "beruf": 3, "services": ["StB", "Payroll"], "age": "55-59", "succession": false, "digital": false, "sub": {"size": 16.8, "margin": 6.7, "adjacency": 10, "geo": 12.8, "succession": 13.5}, "score": 60, "status": "Identified", "notes": ["Large payroll book at modest margin - direct shared-services synergy case."], "rank": 41}, {"id": 53, "name": "Brandl & Partner Wirtschaftstreuhand", "country": "AT", "city": "Graz", "region": "Steiermark", "rev": 4.3, "margin": 0.11, "fte": 43, "beruf": 7, "services": ["StB", "Advisory", "M&A"], "age": "55-59", "succession": true, "digital": false, "sub": {"size": 21.8, "margin": 5.0, "adjacency": 13, "geo": 8.2, "succession": 10.7}, "score": 59, "status": "Identified", "notes": ["Partner group approaching retirement window; succession conversation plausible.", "Existing transaction-advisory line - cross-sell anchor for the group."], "rank": 42}, {"id": 42, "name": "Treuhand Bachmann AG", "country": "CH", "city": "Zuerich", "region": "ZH", "rev": 8.1, "margin": 0.2, "fte": 68, "beruf": 12, "services": ["StB", "Payroll", "Advisory"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 10.9, "margin": 20.0, "adjacency": 13, "geo": 10.5, "succession": 2.7}, "score": 57, "status": "Identified", "notes": ["Cloud/DATEV-forward setup; low integration friction expected."], "rank": 43}, {"id": 25, "name": "Steuerkanzlei Leitner & Partner", "country": "DE", "city": "Leipzig", "region": "Sachsen", "rev": 5.3, "margin": 0.158, "fte": 47, "beruf": 8, "services": ["StB"], "age": "45-54", "succession": false, "digital": false, "sub": {"size": 23.6, "margin": 13.0, "adjacency": 8, "geo": 7.5, "succession": 4.0}, "score": 56, "status": "Identified", "notes": ["Solid regional compliance book; standard integration playbook applies."], "rank": 44}, {"id": 15, "name": "Frei & Kollegen Steuerberatungsgesellschaft mbH", "country": "DE", "city": "Stuttgart", "region": "Baden-Wuerttemberg", "rev": 3.7, "margin": 0.087, "fte": 35, "beruf": 7, "services": ["StB", "Advisory"], "age": "55-59", "succession": false, "digital": false, "sub": {"size": 19.1, "margin": 1.2, "adjacency": 11, "geo": 13.5, "succession": 10.4}, "score": 55, "status": "Identified", "notes": ["Solid regional compliance book; standard integration playbook applies."], "rank": 45}, {"id": 30, "name": "Fuchs Wagner Wirtschaftspruefung & Steuerberatung", "country": "DE", "city": "Dresden", "region": "Sachsen", "rev": 9.0, "margin": 0.14, "fte": 83, "beruf": 12, "services": ["StB", "WP"], "age": "60+", "succession": true, "digital": false, "sub": {"size": 6.8, "margin": 10.0, "adjacency": 13, "geo": 7.5, "succession": 17.3}, "score": 55, "status": "Identified", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 46}, {"id": 21, "name": "Steuerkanzlei Frei & Partner", "country": "DE", "city": "Karlsruhe", "region": "Baden-Wuerttemberg", "rev": 2.2, "margin": 0.145, "fte": 23, "beruf": 3, "services": ["StB"], "age": "55-59", "succession": false, "digital": true, "sub": {"size": 12.3, "margin": 10.8, "adjacency": 8, "geo": 12.8, "succession": 8.6}, "score": 53, "status": "Identified", "notes": ["Cloud/DATEV-forward setup; low integration friction expected."], "rank": 47}, {"id": 43, "name": "Treuhand Keller AG", "country": "CH", "city": "Winterthur", "region": "ZH", "rev": 2.0, "margin": 0.109, "fte": 21, "beruf": 3, "services": ["StB", "WP"], "age": "55-59", "succession": true, "digital": true, "sub": {"size": 11.4, "margin": 4.8, "adjacency": 13, "geo": 10.5, "succession": 13.0}, "score": 53, "status": "Identified", "notes": ["Partner group approaching retirement window; succession conversation plausible.", "Audit licence (WP) adds regulated capability to the platform."], "rank": 48}, {"id": 2, "name": "Baumann Treuhand- und Steuerberatungsgesellschaft", "country": "DE", "city": "Wuerzburg", "region": "Bayern", "rev": 1.5, "margin": 0.174, "fte": 12, "beruf": 2, "services": ["StB"], "age": "45-54", "succession": false, "digital": false, "sub": {"size": 9.1, "margin": 15.7, "adjacency": 8, "geo": 13.5, "succession": 6.0}, "score": 52, "status": "Identified", "notes": ["Solid regional compliance book; standard integration playbook applies."], "rank": 49}, {"id": 7, "name": "Seidel Sutter Wirtschaftspruefung & Steuerberatung", "country": "DE", "city": "Bonn", "region": "NRW", "rev": 1.8, "margin": 0.095, "fte": 15, "beruf": 3, "services": ["StB", "Payroll", "M&A"], "age": "60+", "succession": true, "digital": true, "sub": {"size": 10.5, "margin": 2.5, "adjacency": 12, "geo": 7.5, "succession": 19.9}, "score": 52, "status": "Identified", "notes": ["Managing partner(s) 60+; no internal succession identified in public signals.", "Large payroll book at modest margin - direct shared-services synergy case."], "rank": 50}, {"id": 18, "name": "Maier Rueegg Wirtschaftspruefung & Steuerberatung", "country": "DE", "city": "Wuerzburg", "region": "Bayern", "rev": 2.5, "margin": 0.113, "fte": 25, "beruf": 4, "services": ["StB", "WP", "Payroll"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 13.6, "margin": 5.5, "adjacency": 15, "geo": 13.5, "succession": 4.3}, "score": 52, "status": "Identified", "notes": ["Audit licence (WP) adds regulated capability to the platform.", "Large payroll book at modest margin - direct shared-services synergy case."], "rank": 51}, {"id": 47, "name": "Krueger Treuhand GmbH", "country": "CH", "city": "Aarau", "region": "AG", "rev": 3.2, "margin": 0.1, "fte": 29, "beruf": 4, "services": ["StB", "WP", "Payroll", "Advisory"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 16.8, "margin": 3.3, "adjacency": 18, "geo": 9.8, "succession": 3.8}, "score": 52, "status": "Identified", "notes": ["Audit licence (WP) adds regulated capability to the platform.", "Large payroll book at modest margin - direct shared-services synergy case."], "rank": 52}, {"id": 54, "name": "Fuchs & Partner Wirtschaftstreuhand", "country": "AT", "city": "Wien", "region": "Wien", "rev": 4.1, "margin": 0.08, "fte": 42, "beruf": 8, "services": ["StB", "Payroll"], "age": "55-59", "succession": false, "digital": false, "sub": {"size": 20.9, "margin": 0.0, "adjacency": 10, "geo": 9.0, "succession": 11.3}, "score": 51, "status": "Identified", "notes": ["Large payroll book at modest margin - direct shared-services synergy case."], "rank": 53}, {"id": 23, "name": "Buehler & Kollegen Steuerberatungsgesellschaft mbH", "country": "DE", "city": "Koeln", "region": "NRW", "rev": 2.6, "margin": 0.149, "fte": 24, "beruf": 3, "services": ["StB"], "age": "55-59", "succession": false, "digital": true, "sub": {"size": 14.1, "margin": 11.5, "adjacency": 8, "geo": 7.5, "succession": 8.6}, "score": 50, "status": "Identified", "notes": ["Cloud/DATEV-forward setup; low integration friction expected."], "rank": 54}, {"id": 8, "name": "Kanzlei Widmer Steuerberater", "country": "DE", "city": "Mainz", "region": "Rheinland-Pfalz", "rev": 2.3, "margin": 0.153, "fte": 24, "beruf": 3, "services": ["StB", "WP"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 12.7, "margin": 12.2, "adjacency": 13, "geo": 9.0, "succession": 2.5}, "score": 49, "status": "Identified", "notes": ["Audit licence (WP) adds regulated capability to the platform.", "Cloud/DATEV-forward setup; low integration friction expected."], "rank": 55}, {"id": 46, "name": "Buehler & Partner Treuhand", "country": "CH", "city": "Zuerich", "region": "ZH", "rev": 2.2, "margin": 0.122, "fte": 23, "beruf": 4, "services": ["StB", "Payroll", "Advisory"], "age": "45-54", "succession": false, "digital": false, "sub": {"size": 12.3, "margin": 7.0, "adjacency": 13, "geo": 10.5, "succession": 4.3}, "score": 47, "status": "Identified", "notes": ["Large payroll book at modest margin - direct shared-services synergy case."], "rank": 56}, {"id": 41, "name": "Keller Treuhand GmbH", "country": "CH", "city": "Zuerich", "region": "ZH", "rev": 2.3, "margin": 0.096, "fte": 20, "beruf": 3, "services": ["StB"], "age": "55-59", "succession": true, "digital": false, "sub": {"size": 12.7, "margin": 2.7, "adjacency": 8, "geo": 10.5, "succession": 12.2}, "score": 46, "status": "Identified", "notes": ["Partner group approaching retirement window; succession conversation plausible."], "rank": 57}, {"id": 36, "name": "Steuerkanzlei Steiner & Partner", "country": "DE", "city": "Dresden", "region": "Sachsen", "rev": 2.6, "margin": 0.129, "fte": 22, "beruf": 3, "services": ["StB", "Advisory"], "age": "45-54", "succession": false, "digital": true, "sub": {"size": 14.1, "margin": 8.2, "adjacency": 11, "geo": 7.5, "succession": 3.5}, "score": 44, "status": "Identified", "notes": ["Cloud/DATEV-forward setup; low integration friction expected."], "rank": 58}, {"id": 40, "name": "Buehler Pichler Wirtschaftspruefung & Steuerberatung", "country": "DE", "city": "Ulm", "region": "Baden-Wuerttemberg", "rev": 1.9, "margin": 0.126, "fte": 18, "beruf": 3, "services": ["StB", "M&A"], "age": "45-54", "succession": false, "digital": false, "sub": {"size": 10.9, "margin": 7.7, "adjacency": 10, "geo": 13.5, "succession": 2.4}, "score": 44, "status": "Identified", "notes": ["Existing transaction-advisory line - cross-sell anchor for the group."], "rank": 59}, {"id": 27, "name": "Weber Lehmann Wirtschaftspruefung & Steuerberatung", "country": "DE", "city": "Hamburg", "region": "Hamburg", "rev": 2.7, "margin": 0.113, "fte": 26, "beruf": 4, "services": ["StB"], "age": "45-54", "succession": false, "digital": false, "sub": {"size": 14.5, "margin": 5.5, "adjacency": 8, "geo": 6.0, "succession": 4.9}, "score": 39, "status": "Identified", "notes": ["Solid regional compliance book; standard integration playbook applies."], "rank": 60}];
+const SUBMAX = {size:25, margin:20, adjacency:20, geo:15, succession:20};
+const SUBMETA = [
+  ['size','Size fit','#3A4A55','Peak fit €3.5–6.5m revenue (integrable, needle-moving)'],
+  ['margin','Margin quality','#5C6B76','EBITDA margin scaled 8%→20%'],
+  ['adjacency','Service adjacency','#2E7D6B','StB core + WP licence, payroll, advisory, M&A lines'],
+  ['geo','Geography','#8FB3AA','Cluster fit around platform footprint (southern DACH)'],
+  ['succession','Succession','#C08A2D','Partner age structure & succession signals']
+];
+const CCOL = {DE:'#3A4A55', CH:'#2E7D6B', AT:'#8A6D3B'};
+const NEXT = {
+  Identified:'Enrich the profile (registry extract, partner tenure, client mix) and confirm the size band before outreach.',
+  Prioritized:'Search for a warm introduction via network and advisors; prepare a tailored one-pager for first contact.',
+  Contacted:'Follow up within 10 days; propose an introductory call with the platform managing partner.',
+  NDA:'Request 3-year financials and client-concentration split; prepare a valuation range at 4.5–6.5x EBITDA.',
+  IOI:'Draft the indicative offer structure (retention earn-out); align the 100-day integration plan with platform ops.'
+};
+const st = {c:'ALL', ms:0, band:'ALL', succ:false, q:'', sk:'score', sd:-1, sel:null};
+const $ = id => document.getElementById(id);
+const fm = {
+  rev: v => '€'+v.toFixed(1)+'m',
+  pct: v => (v*100).toFixed(1)+'%',
+  n: v => v.toLocaleString('en-US')
+};
+
+function filtered(){
+  return DATA.filter(r =>
+    (st.c==='ALL' || r.country===st.c) &&
+    r.score >= st.ms &&
+    (st.band==='ALL' || (st.band==='S'&&r.rev<3) || (st.band==='M'&&r.rev>=3&&r.rev<=6) || (st.band==='L'&&r.rev>6)) &&
+    (!st.succ || r.succession) &&
+    (!st.q || (r.name+' '+r.city).toLowerCase().includes(st.q))
+  );
+}
+function sorted(rows){
+  const k = st.sk, d = st.sd;
+  return [...rows].sort((a,b)=>{
+    let x = a[k], y = b[k];
+    if(typeof x === 'string'){x = x.toLowerCase(); y = y.toLowerCase();}
+    return (x<y?-1:x>y?1:0)*d;
+  });
+}
+
+function renderKPIs(rows){
+  const hi = rows.filter(r=>r.score>=70).length;
+  const su = rows.filter(r=>r.succession).length;
+  const eb = rows.reduce((s,r)=>s+r.rev*r.margin,0);
+  const med = rows.length ? [...rows].sort((a,b)=>a.rev-b.rev)[Math.floor(rows.length/2)].rev : 0;
+  $('kpis').innerHTML = [
+    ['Targets in view', fm.n(rows.length), ''],
+    ['Fit score ≥ 70', fm.n(hi), ''],
+    ['Succession signals', fm.n(su), ''],
+    ['Acquirable EBITDA', '€'+eb.toFixed(1), '<span class="u">m</span>'],
+    ['Median revenue', '€'+med.toFixed(1), '<span class="u">m</span>']
+  ].map(([l,v,u])=>`<div class="kpi"><div class="v">${v}${u}</div><div class="l">${l}</div></div>`).join('');
+}
+
+const COLSDEF = [
+  ['rank','#','num'],['name','Target',''],['country','CC',''],['rev','Revenue','num'],
+  ['margin','EBITDA %','num'],['fte','FTE','num'],['services','Services',''],
+  ['succession','Succ',''],['score','Fit score','score'],['status','Stage','']
+];
+function renderHead(){
+  $('thead').innerHTML = COLSDEF.map(([k,l,cls])=>{
+    const sortable = ['name','country','rev','margin','fte','score','rank'].includes(k);
+    const arr = st.sk===k ? `<span class="arr">${st.sd<0?'▾':'▴'}</span>` : '';
+    return `<th class="${cls==='num'?'num':''}" ${sortable?`data-k="${k}"`:''}>${l} ${arr}</th>`;
+  }).join('');
+  document.querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{
+    const k = th.dataset.k;
+    if(st.sk===k) st.sd*=-1; else {st.sk=k; st.sd = (k==='name'||k==='country'||k==='rank')?1:-1;}
+    render();
+  });
+}
+function spine(r){
+  return `<div class="spine">`+SUBMETA.map(([k,,c])=>
+    `<i class="sp" style="width:${r.sub[k]}%;background:${c}" title="${k}: ${r.sub[k]}"></i>`).join('')+`</div>`;
+}
+function renderTable(rows){
+  $('count').textContent = rows.length + ' of ' + DATA.length + ' targets';
+  if(!rows.length){ $('tbody').innerHTML = `<tr><td colspan="10"><div class="empty">No targets match the current filters.</div></td></tr>`; return; }
+  $('tbody').innerHTML = rows.map(r=>`
+    <tr data-id="${r.id}" class="${st.sel===r.id?'sel':''}">
+      <td class="num">${r.rank}</td>
+      <td><div class="t-name">${r.name}</div><div class="t-city">${r.city} · ${r.region}</div></td>
+      <td><span class="cbadge">${r.country}</span></td>
+      <td class="num">${fm.rev(r.rev)}</td>
+      <td class="num">${fm.pct(r.margin)}</td>
+      <td class="num">${r.fte}</td>
+      <td class="tags">${r.services.map(s=>`<span>${s}</span>`).join('')}</td>
+      <td style="text-align:center">${r.succession?'<span class="sdot" title="Succession signal"></span>':''}</td>
+      <td class="score-cell"><div class="score-n">${r.score}</div>${spine(r)}</td>
+      <td><span class="status st-${r.status}">${r.status}</span></td>
+    </tr>`).join('');
+  document.querySelectorAll('#tbody tr[data-id]').forEach(tr=>tr.onclick=()=>openDrawer(+tr.dataset.id));
+}
+
+function renderScatter(rows){
+  const W=640,H=440,L=48,R=16,T=14,B=40;
+  const x = v => L + (v/10)*(W-L-R);
+  const y = v => H-B - ((v-0.06)/0.16)*(H-T-B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Revenue vs margin scatter">`;
+  for(const gx of [2,4,6,8,10]) s += `<line x1="${x(gx)}" y1="${T}" x2="${x(gx)}" y2="${H-B}" stroke="#E9E5DA" stroke-dasharray="3 4"/><text x="${x(gx)}" y="${H-B+18}" font-family="IBM Plex Mono" font-size="10" fill="#5C6B76" text-anchor="middle">${gx}</text>`;
+  for(const gy of [0.08,0.12,0.16,0.20]) s += `<line x1="${L}" y1="${y(gy)}" x2="${W-R}" y2="${y(gy)}" stroke="#E9E5DA" stroke-dasharray="3 4"/><text x="${L-7}" y="${y(gy)+3}" font-family="IBM Plex Mono" font-size="10" fill="#5C6B76" text-anchor="end">${Math.round(gy*100)}%</text>`;
+  s += `<line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#5C6B76"/><line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="#5C6B76"/>`;
+  s += `<text x="${(W+L-R)/2}" y="${H-6}" font-family="IBM Plex Mono" font-size="10" fill="#5C6B76" text-anchor="middle">REVENUE (€M)</text>`;
+  s += `<text x="14" y="${(H-B+T)/2}" font-family="IBM Plex Mono" font-size="10" fill="#5C6B76" text-anchor="middle" transform="rotate(-90 14 ${(H-B+T)/2})">EBITDA MARGIN</text>`;
+  for(const r of rows){
+    const rad = 4 + (r.score/100)*9;
+    s += `<circle data-id="${r.id}" cx="${x(r.rev).toFixed(1)}" cy="${y(r.margin).toFixed(1)}" r="${rad.toFixed(1)}" fill="${CCOL[r.country]}" fill-opacity="0.72" stroke="${r.succession?'#C08A2D':'#ffffff'}" stroke-width="${r.succession?2:1}" style="cursor:pointer"/>`;
+  }
+  s += `</svg>`;
+  $('scatter').innerHTML = s;
+  const tt = $('tt');
+  document.querySelectorAll('#scatter circle').forEach(c=>{
+    const r = DATA.find(d=>d.id===+c.dataset.id);
+    c.addEventListener('mousemove', e=>{
+      tt.style.opacity=1;
+      tt.style.left=(e.clientX+14)+'px'; tt.style.top=(e.clientY+10)+'px';
+      tt.innerHTML = `<b>${r.name}</b><br>${r.city} ${r.country} · fit ${r.score}<br>${fm.rev(r.rev)} · ${fm.pct(r.margin)} EBITDA`;
+    });
+    c.addEventListener('mouseleave', ()=>tt.style.opacity=0);
+    c.addEventListener('click', ()=>openDrawer(r.id));
+  });
+}
+
+function renderFunnel(rows){
+  const order = ['Identified','Prioritized','Contacted','NDA','IOI'];
+  const counts = order.map(o=>rows.filter(r=>r.status===o).length);
+  const mx = Math.max(...counts,1);
+  $('funnel').innerHTML = order.map((o,i)=>`
+    <div class="f-row"><div class="f-lab">${o}</div>
+    <div class="f-track"><div class="f-bar" style="width:${(counts[i]/mx*100).toFixed(0)}%"></div></div>
+    <div class="f-n">${counts[i]}</div></div>`).join('');
+}
+
+function renderMethod(){
+  $('method').innerHTML = SUBMETA.map(([k,l,c,d])=>`
+    <div class="mrow" title="${d}"><div><span class="swatch" style="background:${c}"></span>${l}</div>
+    <div class="w">${SUBMAX[k]}</div></div>`).join('');
+}
+
+function openDrawer(id){
+  st.sel = id;
+  const r = DATA.find(d=>d.id===id);
+  $('dbody').innerHTML = `
+    <div class="d-rank">Rank ${r.rank} of ${DATA.length} · fit ${r.score}/100</div>
+    <div class="d-name">${r.name}</div>
+    <div class="d-loc">${r.city}, ${r.region} (${r.country}) · <span class="status st-${r.status}">${r.status}</span></div>
+    <div class="d-metrics">
+      <div class="d-m"><div class="v">${fm.rev(r.rev)}</div><div class="l">Revenue</div></div>
+      <div class="d-m"><div class="v">${fm.pct(r.margin)}</div><div class="l">EBITDA margin</div></div>
+      <div class="d-m"><div class="v">${r.fte}</div><div class="l">FTE</div></div>
+      <div class="d-m"><div class="v">${r.beruf}</div><div class="l">Berufsträger</div></div>
+    </div>
+    <div class="tags">${r.services.map(s=>`<span>${s}</span>`).join('')} ${r.digital?'<span>Cloud/DATEV</span>':''} <span>Partners ${r.age}</span></div>
+    <div class="d-sec">Score composition</div>
+    ${SUBMETA.map(([k,l,c])=>`
+      <div class="sb-row"><div>${l}</div>
+      <div class="sb-track"><div class="sb-bar" style="width:${(r.sub[k]/SUBMAX[k]*100).toFixed(0)}%;background:${c}"></div></div>
+      <div class="sb-v">${r.sub[k]}/${SUBMAX[k]}</div></div>`).join('')}
+    <div class="d-sec">Sourcing angle</div>
+    ${r.notes.map(n=>`<div class="d-note">${n}</div>`).join('')}
+    <div class="d-sec">Suggested next step</div>
+    <div class="d-next"><b>${r.status}</b>${NEXT[r.status]}</div>`;
+  $('drawer').classList.add('open');
+  render(false);
+}
+function closeDrawer(){ st.sel=null; $('drawer').classList.remove('open'); render(false); }
+
+function render(full=true){
+  const rows = sorted(filtered());
+  renderKPIs(rows); renderHead(); renderTable(rows); renderFunnel(rows);
+  if(full) renderScatter(rows);
+}
+
+document.querySelectorAll('.pill').forEach(p=>p.onclick=()=>{
+  document.querySelectorAll('.pill').forEach(x=>x.classList.remove('on'));
+  p.classList.add('on'); st.c=p.dataset.c; render();
+});
+$('ms').oninput = e=>{st.ms=+e.target.value; $('msv').textContent=st.ms; render();};
+$('band').onchange = e=>{st.band=e.target.value; render();};
+$('succ').onchange = e=>{st.succ=e.target.checked; render();};
+$('q').oninput = e=>{st.q=e.target.value.trim().toLowerCase(); render();};
+$('reset').onclick = ()=>{
+  st.c='ALL'; st.ms=0; st.band='ALL'; st.succ=false; st.q='';
+  document.querySelectorAll('.pill').forEach(x=>x.classList.toggle('on',x.dataset.c==='ALL'));
+  $('ms').value=0; $('msv').textContent='0'; $('band').value='ALL'; $('succ').checked=false; $('q').value='';
+  render();
+};
+$('dclose').onclick = closeDrawer;
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
+
+renderMethod();
+render();
+</script>
+</body>
+</html>
